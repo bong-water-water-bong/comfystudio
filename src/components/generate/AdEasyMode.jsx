@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 
 const STEPS = [
   { id: 'brief', label: 'Brief' },
-  { id: 'direction', label: 'Direction' },
+  { id: 'direction', label: 'Creative' },
+  { id: 'delivery', label: 'Delivery' },
   { id: 'references', label: 'References' },
-  { id: 'review', label: 'Review' },
   { id: 'script', label: 'Script Plan' },
   { id: 'keyframes', label: 'Keyframes' },
   { id: 'videos', label: 'Videos' },
@@ -18,16 +18,12 @@ const FORMAT_OPTIONS = [
   { id: 'tech_demo', label: 'Technical Demo' },
 ]
 
-const PLATFORM_OPTIONS = [
-  { id: 'vertical_9x16', label: '9:16' },
-  { id: 'landscape_16x9', label: '16:9' },
-  { id: 'square_1x1', label: '1:1' },
-]
-
-const OUTPUT_ASPECT_RATIO_OPTIONS = [
+const ASPECT_RATIO_OPTIONS = [
   { id: 'vertical_9x16', label: '9:16', helper: 'Portrait: 720x1280 or 1080x1920.' },
   { id: 'landscape_16x9', label: '16:9', helper: 'Landscape: 1280x720 or 1920x1080.' },
+  { id: 'square_1x1', label: '1:1', helper: 'Square: 720x720 or 1080x1080.' },
 ]
+const PLATFORM_OPTIONS = ASPECT_RATIO_OPTIONS
 
 const TONE_OPTIONS = [
   { id: 'premium-calm', label: 'Premium Calm', text: 'premium calm' },
@@ -448,7 +444,7 @@ function buildExternalLlmPrompt(data, currentScript) {
     `Promise: ${compact(data.promise, 'main product benefit')}`,
     `Visual rules: ${compact(data.colors, 'clean brand colors')}`,
     `Format: ${compact(data.formatLabel, 'Product Ad')}`,
-    `Platform: ${compact(data.platform, 'vertical_9x16')}`,
+    `Aspect ratio: ${compact(data.aspectRatioLabel, data.platform || '9:16')}`,
     `Tone: ${compact(data.toneText, 'premium calm')}`,
     `Commercial length: ${Number(data.commercialLength) || 30} seconds`,
     `Shot count: ${Number(data.shotCount) || 8}`,
@@ -649,6 +645,7 @@ export default function AdEasyMode({
   const selectedTone = TONE_OPTIONS.find((option) => option.id === tone) || TONE_OPTIONS[0]
   const selectedFormat = FORMAT_OPTIONS.find((option) => option.id === format) || FORMAT_OPTIONS[0]
   const selectedVideoWorkflow = VIDEO_MODEL_OPTIONS.find((option) => option.id === videoWorkflowId) || VIDEO_MODEL_OPTIONS[0]
+  const selectedAspectRatio = ASPECT_RATIO_OPTIONS.find((option) => option.id === platform) || ASPECT_RATIO_OPTIONS[0]
   const outputResolution = useMemo(
     () => resolveOutputResolution(platform, resolutionPreset),
     [platform, resolutionPreset]
@@ -665,6 +662,7 @@ export default function AdEasyMode({
     format,
     formatLabel: selectedFormat.label,
     platform,
+    aspectRatioLabel: selectedAspectRatio.label,
     tone,
     toneText: selectedTone.text,
     resolutionPreset,
@@ -701,6 +699,7 @@ export default function AdEasyMode({
     selectedFormat.label,
     selectedTone.text,
     colors,
+    `Aspect ratio: ${selectedAspectRatio.label}`,
     `Output resolution: ${outputResolutionLabel}`,
     `FPS: ${Number(videoFps) || 24}`,
     productAssetId ? 'Use the product reference as the packaging/product anchor.' : '',
@@ -1051,10 +1050,6 @@ export default function AdEasyMode({
               <input value={product} onChange={(e) => setProduct(e.target.value)} className="mt-1 w-full rounded-lg border border-sf-dark-600 bg-sf-dark-800 px-3 py-2 text-xs text-sf-text-primary focus:border-sf-accent focus:outline-none" />
             </label>
             <label className="text-xs text-sf-text-secondary">
-              <span className="text-[10px] uppercase tracking-wider text-sf-text-muted">Visual rules</span>
-              <input value={colors} onChange={(e) => setColors(e.target.value)} className="mt-1 w-full rounded-lg border border-sf-dark-600 bg-sf-dark-800 px-3 py-2 text-xs text-sf-text-primary focus:border-sf-accent focus:outline-none" />
-            </label>
-            <label className="text-xs text-sf-text-secondary">
               <span className="text-[10px] uppercase tracking-wider text-sf-text-muted">Audience</span>
               <input value={audience} onChange={(e) => setAudience(e.target.value)} className="mt-1 w-full rounded-lg border border-sf-dark-600 bg-sf-dark-800 px-3 py-2 text-xs text-sf-text-primary focus:border-sf-accent focus:outline-none" />
             </label>
@@ -1062,10 +1057,64 @@ export default function AdEasyMode({
               <span className="text-[10px] uppercase tracking-wider text-sf-text-muted">What should people remember?</span>
               <textarea value={promise} onChange={(e) => setPromise(e.target.value)} rows={3} className="mt-1 w-full resize-y rounded-lg border border-sf-dark-600 bg-sf-dark-800 px-3 py-2 text-xs text-sf-text-primary focus:border-sf-accent focus:outline-none" />
             </label>
+            <label className="text-xs text-sf-text-secondary">
+              <span className="text-[10px] uppercase tracking-wider text-sf-text-muted">Commercial length</span>
+              <select value={commercialLength} onChange={(e) => updateLength(e.target.value)} className="mt-1 w-full rounded-lg border border-sf-dark-600 bg-sf-dark-800 px-3 py-2 text-xs text-sf-text-primary focus:border-sf-accent focus:outline-none">
+                {COMMERCIAL_LENGTH_OPTIONS.map((seconds) => <option key={seconds} value={seconds}>{seconds} seconds</option>)}
+              </select>
+            </label>
+          </div>
+          <div className="flex justify-end">
+            <button type="button" onClick={() => goTo('direction')} className="rounded-lg bg-sf-accent px-3 py-2 text-xs text-white hover:bg-sf-accent-hover">Next: Creative Direction</button>
+          </div>
+        </div>
+      )}
+
+      {step === 'direction' && (
+        <div className="rounded-xl border border-sf-dark-700 bg-sf-dark-900/60 p-4 space-y-4">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.14em] text-sf-accent">ComfyStudio asks</div>
+            <h2 className="mt-1 text-lg font-semibold text-sf-text-primary">What kind of ad should this become?</h2>
+            <p className="mt-1 text-xs text-sf-text-muted">These choices become structured Director settings, not a freeform chatbot prompt.</p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-sf-text-muted">Format</div>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {FORMAT_OPTIONS.map((option) => renderChoiceButton(format === option.id, option.label, () => setFormat(option.id)))}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-sf-text-muted">Tone</div>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {TONE_OPTIONS.map((option) => renderChoiceButton(tone === option.id, option.label, () => setTone(option.id)))}
+              </div>
+            </div>
+            <label className="text-xs text-sf-text-secondary md:col-span-2">
+              <span className="text-[10px] uppercase tracking-wider text-sf-text-muted">Visual style / rules</span>
+              <input value={colors} onChange={(e) => setColors(e.target.value)} className="mt-1 w-full rounded-lg border border-sf-dark-600 bg-sf-dark-800 px-3 py-2 text-xs text-sf-text-primary focus:border-sf-accent focus:outline-none" />
+            </label>
+            <label className="text-xs text-sf-text-secondary md:col-span-2">
+              <span className="text-[10px] uppercase tracking-wider text-sf-text-muted">Optional talent or voice direction</span>
+              <textarea value={talentDirection} onChange={(e) => setTalentDirection(e.target.value)} rows={3} placeholder="Example: friendly skincare expert, calm female voiceover, no visible spokesperson" className="mt-1 w-full resize-y rounded-lg border border-sf-dark-600 bg-sf-dark-800 px-3 py-2 text-xs text-sf-text-primary focus:border-sf-accent focus:outline-none" />
+            </label>
+          </div>
+          {renderActions('brief', 'delivery', 'Next: Delivery')}
+        </div>
+      )}
+
+      {step === 'delivery' && (
+        <div className="rounded-xl border border-sf-dark-700 bg-sf-dark-900/60 p-4 space-y-4">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.14em] text-sf-accent">Delivery settings</div>
+            <h2 className="mt-1 text-lg font-semibold text-sf-text-primary">Where should the ad fit?</h2>
+            <p className="mt-1 text-xs text-sf-text-muted">These settings control frame shape, output size, and motion timing for keyframes and video renders.</p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div className="rounded-xl border border-sf-dark-700 bg-sf-dark-800/40 p-3">
               <div className="text-[10px] uppercase tracking-wider text-sf-text-muted">Aspect ratio</div>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {OUTPUT_ASPECT_RATIO_OPTIONS.map((option) => renderChoiceButton(
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {ASPECT_RATIO_OPTIONS.map((option) => renderChoiceButton(
                   platform === option.id,
                   option.label,
                   () => {
@@ -1115,49 +1164,7 @@ export default function AdEasyMode({
               </div>
             </div>
           </div>
-          <div className="flex justify-end">
-            <button type="button" onClick={() => goTo('direction')} className="rounded-lg bg-sf-accent px-3 py-2 text-xs text-white hover:bg-sf-accent-hover">Next: Creative Direction</button>
-          </div>
-        </div>
-      )}
-
-      {step === 'direction' && (
-        <div className="rounded-xl border border-sf-dark-700 bg-sf-dark-900/60 p-4 space-y-4">
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.14em] text-sf-accent">ComfyStudio asks</div>
-            <h2 className="mt-1 text-lg font-semibold text-sf-text-primary">What kind of ad should this become?</h2>
-            <p className="mt-1 text-xs text-sf-text-muted">These choices become structured Director settings, not a freeform chatbot prompt.</p>
-          </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div>
-              <div className="text-[10px] uppercase tracking-wider text-sf-text-muted">Format</div>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {FORMAT_OPTIONS.map((option) => renderChoiceButton(format === option.id, option.label, () => setFormat(option.id)))}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-wider text-sf-text-muted">Platform</div>
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                {PLATFORM_OPTIONS.map((option) => renderChoiceButton(platform === option.id, option.label, () => {
-                  setPlatform(option.id)
-                  const nextResolution = resolveOutputResolution(option.id, resolutionPreset)
-                  setResolution(nextResolution)
-                  setImageResolution(nextResolution)
-                }))}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-wider text-sf-text-muted">Tone</div>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {TONE_OPTIONS.map((option) => renderChoiceButton(tone === option.id, option.label, () => setTone(option.id)))}
-              </div>
-            </div>
-            <label className="text-xs text-sf-text-secondary md:col-span-2">
-              <span className="text-[10px] uppercase tracking-wider text-sf-text-muted">Optional talent or voice direction</span>
-              <textarea value={talentDirection} onChange={(e) => setTalentDirection(e.target.value)} rows={3} placeholder="Example: friendly skincare expert, calm female voiceover, no visible spokesperson" className="mt-1 w-full resize-y rounded-lg border border-sf-dark-600 bg-sf-dark-800 px-3 py-2 text-xs text-sf-text-primary focus:border-sf-accent focus:outline-none" />
-            </label>
-          </div>
-          {renderActions('brief', 'references', 'Next: References')}
+          {renderActions('direction', 'references', 'Next: References')}
         </div>
       )}
 
@@ -1192,55 +1199,22 @@ export default function AdEasyMode({
               </select>
             </div>
           </div>
-          {renderActions('direction', 'review', 'Review My Brief')}
-        </div>
-      )}
-
-      {step === 'review' && (
-        <div className="rounded-xl border border-sf-dark-700 bg-sf-dark-900/60 p-4 space-y-4">
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.14em] text-sf-accent">Review checkpoint</div>
-            <h2 className="mt-1 text-lg font-semibold text-sf-text-primary">Here is the ad brief I heard.</h2>
-          </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            {[
-              ['Brand', brand || 'Auto'],
-              ['Product', product || 'Auto'],
-              ['Audience', audience || 'Auto'],
-              ['Length', `${commercialLength}s`],
-              ['Shots', String(shotCount)],
-              ['Aspect', platform === 'landscape_16x9' ? '16:9' : platform === 'square_1x1' ? '1:1' : '9:16'],
-              ['Resolution', `${resolutionPreset} (${outputResolutionLabel})`],
-              ['FPS', `${videoFps} fps`],
-              ['Video model', 'Choose after keyframes'],
-              ['Keyframes', 'Nano Banana 2'],
-              ['Product reference', productAssetId ? 'Selected' : 'Optional'],
-              ['Talent reference', noVisibleTalent ? 'No visible talent' : (talentAssetId ? 'Selected' : 'Optional')],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-lg border border-sf-dark-700 bg-sf-dark-800/40 px-3 py-2">
-                <div className="text-[10px] uppercase tracking-wider text-sf-text-muted">{label}</div>
-                <div className="mt-1 text-xs font-medium text-sf-text-primary">{value}</div>
-              </div>
-            ))}
-          </div>
-          {renderActions('references', 'script', 'Build Script Plan')}
+          {renderActions('delivery', 'script', 'Build Script Plan')}
         </div>
       )}
 
       {step === 'script' && (
         <div className="rounded-xl border border-sf-dark-700 bg-sf-dark-900/60 p-4 space-y-4">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.14em] text-sf-accent">Review checkpoint</div>
+            <div className="text-[10px] uppercase tracking-[0.14em] text-sf-accent">Script plan</div>
             <h2 className="mt-1 text-lg font-semibold text-sf-text-primary">Proposed script and storyboard plan.</h2>
             <p className="mt-1 text-xs text-sf-text-muted">This script is structured Director text. You can edit it manually before building the plan.</p>
           </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <label className="text-xs text-sf-text-secondary">
-              <span className="text-[10px] uppercase tracking-wider text-sf-text-muted">Commercial length</span>
-              <select value={commercialLength} onChange={(e) => updateLength(e.target.value)} className="mt-1 w-full rounded-lg border border-sf-dark-600 bg-sf-dark-800 px-3 py-2 text-xs text-sf-text-primary focus:border-sf-accent focus:outline-none">
-                {COMMERCIAL_LENGTH_OPTIONS.map((seconds) => <option key={seconds} value={seconds}>{seconds} seconds</option>)}
-              </select>
-            </label>
+            <div className="rounded-lg border border-sf-dark-700 bg-sf-dark-800/40 px-3 py-2">
+              <div className="text-[10px] uppercase tracking-wider text-sf-text-muted">Commercial length</div>
+              <div className="mt-1 text-xs text-sf-text-primary">{commercialLength} seconds</div>
+            </div>
             <label className="text-xs text-sf-text-secondary">
               <span className="text-[10px] uppercase tracking-wider text-sf-text-muted">How many shots?</span>
               <select value={shotCount} onChange={(e) => updateShotCount(e.target.value)} className="mt-1 w-full rounded-lg border border-sf-dark-600 bg-sf-dark-800 px-3 py-2 text-xs text-sf-text-primary focus:border-sf-accent focus:outline-none">
@@ -1296,7 +1270,7 @@ export default function AdEasyMode({
             Double-check the Director Script before continuing. The next step uses this script to create keyframe jobs, so make sure the shot order, prompts, timing, and references look right.
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <button type="button" onClick={() => setStep('review')} className="rounded-lg border border-sf-dark-600 px-3 py-2 text-xs text-sf-text-secondary hover:border-sf-dark-500 hover:text-sf-text-primary">Back</button>
+            <button type="button" onClick={() => setStep('references')} className="rounded-lg border border-sf-dark-600 px-3 py-2 text-xs text-sf-text-secondary hover:border-sf-dark-500 hover:text-sf-text-primary">Back</button>
             <div className="flex flex-wrap justify-end gap-2">
               <button type="button" onClick={() => { const next = generatedScript; setDirectorScript(next); applyToDirector(next) }} className="rounded-lg border border-sf-dark-600 px-3 py-2 text-xs text-sf-text-secondary hover:border-sf-dark-500 hover:text-sf-text-primary">Regenerate script from brief</button>
               <button type="button" onClick={handleUpdatePlanOnly} disabled={isQueuingKeyframes || isQueuingVideos} className="rounded-lg border border-sf-dark-600 px-3 py-2 text-xs text-sf-text-secondary hover:border-sf-dark-500 hover:text-sf-text-primary disabled:cursor-not-allowed disabled:opacity-50">Update Plan Only</button>
